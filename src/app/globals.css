@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #0f1b4d;
+  --color-brand-2: #1d3fd1;
+  --color-gold: #fbbf24;
+}
+
+html { color-scheme: light; }
+body {
+  font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", "Noto Naskh Arabic", system-ui, -apple-system, sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.card { @apply rounded-2xl bg-white shadow-sm ring-1 ring-slate-200; }
+.btn { @apply inline-flex items-center justify-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold text-white transition active:scale-95; }
+.btn-primary { @apply bg-brand-2 hover:bg-brand; }
+.btn-danger { @apply bg-red-600 hover:bg-red-700; }
+.btn-ghost { @apply bg-slate-100 !text-slate-700 hover:bg-slate-200; }
+.input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-2 focus:ring-2 focus:ring-brand-2/20; }
+.label { @apply mb-1 block text-xs font-semibold text-slate-600; }
+.th { @apply px-3 py-2 text-center text-xs font-bold text-white; }
+.td { @apply px-3 py-2 text-center text-sm; }
