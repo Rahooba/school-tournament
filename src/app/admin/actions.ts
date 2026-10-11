@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin, supabaseServer } from "@/lib/supabase-server";
 import { SPORTS, isSport, type SportSlug } from "@/lib/types";
+import { fromCairoInput } from "@/lib/format";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const num = (f: FormData, k: string) => Number(f.get(k) ?? 0);
@@ -69,37 +70,50 @@ export async function deleteTeam(form: FormData) {
 }
 
 // ---------------- المباريات ----------------
-export async function generateFixtures(form: FormData) {
+// قراءة والتحقق من بيانات فورم المباراة (إنشاء / تعديل)
+function readMatchForm(f: FormData, sport: SportSlug) {
+  const team1_id = num(f, "team1_id"), team2_id = num(f, "team2_id");
+  const match_date = fromCairoInput(str(f, "date"));
+  const stage = str(f, "stage");
+  const status = str(f, "status");
+  if (!team1_id || !team2_id) return { error: "اختاري الفريقين" };
+  if (team1_id === team2_id) return { error: "لازم الفريقين يكونوا مختلفين" };
+  if (!match_date) return { error: "حددي تاريخ ووقت المباراة" };
+  if (!["league", "third_place", "final"].includes(stage)) return { error: "مرحلة غير معروفة" };
+  if (!["scheduled", "completed", "cancelled"].includes(status)) return { error: "حالة غير معروفة" };
+
+  const done_ = status === "completed";
+  const s1 = done_ ? Math.max(0, Math.floor(num(f, "s1"))) : 0;
+  const s2 = done_ ? Math.max(0, Math.floor(num(f, "s2"))) : 0;
+  if (done_ && !SPORTS[sport].allowDraw && s1 === s2) return { error: "الطايرة مفيهاش تعادل — لازم فايز" };
+
+  return { row: { sport, team1_id, team2_id, match_date, stage, status, team1_score: s1, team2_score: s2 } };
+}
+
+export async function createMatch(form: FormData) {
   const sport = sportOf(form);
-  try {
-    const sb = await requireAdmin();
-    const start = new Date(str(form, "start"));
-    const gap = Math.max(10, num(form, "gap"));
-    if (isNaN(start.getTime())) throw new Error("حدد تاريخ البداية");
+  const sb = await requireAdmin();
+  const r = readMatchForm(form, sport);
+  if (r.error) done(sport, "matches", r.error, "err");
+  const { error } = await sb.from("matches").insert(r.row!);
+  done(sport, "matches", error ? error.message : "تمت إضافة المباراة", error ? "err" : "ok");
+}
 
-    const [{ data: teams }, { data: existing }] = await Promise.all([
-      sb.from("teams").select("id").eq("sport", sport).order("id"),
-      sb.from("matches").select("team1_id,team2_id").eq("sport", sport).eq("stage", "league"),
-    ]);
-    if (!teams || teams.length < 2) throw new Error("لازم فريقين على الأقل");
+export async function updateMatch(form: FormData) {
+  const sport = sportOf(form);
+  const sb = await requireAdmin();
+  const id = num(form, "id");
+  const back = `matches/${id}/edit`;
+  const r = readMatchForm(form, sport);
+  if (r.error) done(sport, back, r.error, "err");
 
-    const have = new Set((existing ?? []).map((m) => [m.team1_id, m.team2_id].sort().join("-")));
-    const rows: object[] = [];
-    let t = start.getTime();
-    for (let i = 0; i < teams.length; i++)
-      for (let j = i + 1; j < teams.length; j++) {
-        if (have.has([teams[i].id, teams[j].id].sort().join("-"))) continue;
-        rows.push({ sport, team1_id: teams[i].id, team2_id: teams[j].id, match_date: new Date(t).toISOString(), stage: "league", status: "scheduled" });
-        t += gap * 60_000;
-      }
-    if (!rows.length) throw new Error("كل المباريات متعملة بالفعل");
-    const { error } = await sb.from("matches").insert(rows);
-    if (error) throw error;
-    done(sport, "matches", `تم إنشاء ${rows.length} مباراة`);
-  } catch (e) {
-    if ((e as { digest?: string }).digest?.startsWith("NEXT_REDIRECT")) throw e;
-    done(sport, "matches", (e as Error).message, "err");
-  }
+  // لو الفريق اتغير، إحصائيات اللاعبين القديمة بتبقى غلط — نمسحها
+  const { data: old } = await sb.from("matches").select("team1_id,team2_id").eq("id", id).single();
+  const { error } = await sb.from("matches").update(r.row!).eq("id", id).eq("sport", sport);
+  if (error) done(sport, back, error.message, "err");
+  const teamsChanged = old && (old.team1_id !== r.row!.team1_id || old.team2_id !== r.row!.team2_id);
+  if (teamsChanged) await sb.from("player_stats").delete().eq("match_id", id);
+  done(sport, "matches", "تم تعديل المباراة");
 }
 
 export async function saveResult(form: FormData) {
