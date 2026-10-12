@@ -45,7 +45,9 @@ export default async function MatchStatsAdmin({ params, searchParams }: { params
     <form action={saveMatchStats} className="space-y-4">
       <Flash ok={ok} err={err} />
       <input type="hidden" name="sport" value={sport} /><input type="hidden" name="match_id" value={m.id} />
-      <h2 className="text-lg font-extrabold">{t1} {m.team1_score} - {m.team2_score} {t2}</h2>
+      <h2 className="flex flex-wrap items-center gap-2 text-lg font-extrabold">
+        <span>{t1}</span><span>{m.team1_score}</span><span>-</span><span>{m.team2_score}</span><span>{t2}</span>
+      </h2>
       <div className="grid gap-4 md:grid-cols-2">
         {column(m.team1_id, t1, m.team1_score)}
         {column(m.team2_id, t2, m.team2_score)}

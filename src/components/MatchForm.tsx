@@ -56,7 +56,7 @@ export function MatchForm({
       {/* النتيجة بتظهر بس لما الحالة تبقى «انتهت» */}
       <div className="hidden rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200 group-has-[option[value=completed]:checked]/f:block">
         <label className="label">النتيجة ({scoreLabel})</label>
-        <div className="flex items-center justify-center gap-3" dir="ltr">
+        <div className="flex items-center justify-center gap-3" dir="rtl">
           <input name="s1" type="number" min={0} defaultValue={match?.team1_score ?? 0} aria-label={`${scoreLabel} الفريق الأول`} className="input !w-20 text-center text-lg font-extrabold" />
           <span className="font-bold text-slate-400">-</span>
           <input name="s2" type="number" min={0} defaultValue={match?.team2_score ?? 0} aria-label={`${scoreLabel} الفريق التاني`} className="input !w-20 text-center text-lg font-extrabold" />

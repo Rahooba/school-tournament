@@ -64,7 +64,7 @@ function MatchItem({ m, sport, scoreLabel }: { m: Match; sport: SportSlug; score
           {cancelled ? (
             <span className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-extrabold text-slate-500">VS</span>
           ) : (
-            <div className="flex items-center gap-1.5 sm:gap-2" dir="ltr">
+            <div className="flex items-center gap-1.5 sm:gap-2" dir="rtl">
               <input name="s1" type="number" min={0} defaultValue={m.team1_score} className={scoreInput} aria-label={`${scoreLabel} ${m.team1?.name}`} />
               <span className="font-bold text-slate-400">:</span>
               <input name="s2" type="number" min={0} defaultValue={m.team2_score} className={scoreInput} aria-label={`${scoreLabel} ${m.team2?.name}`} />
